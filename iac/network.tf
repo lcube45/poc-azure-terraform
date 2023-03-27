@@ -50,12 +50,6 @@ resource "azurerm_route_table" "privateSubnetRouteTable" {
         address_prefix = "10.0.0.0/16"
         next_hop_type = "VnetLocal"
     }
-
-    route {
-        name = "none"
-        address_prefix = "0.0.0.0/0"
-        next_hop_type = "None"
-    }
 }
 
 resource "azurerm_subnet_route_table_association" "publicSubnetRouteTableAssociation" {
@@ -66,4 +60,29 @@ resource "azurerm_subnet_route_table_association" "publicSubnetRouteTableAssocia
 resource "azurerm_subnet_route_table_association" "privateSubnetRouteTableAssociation" {
     subnet_id = azurerm_subnet.privateSubnet.id
     route_table_id = azurerm_route_table.privateSubnetRouteTable.id
+}
+
+resource "azurerm_public_ip" "natGwPublicIp" {
+    name = "natgw-ip"
+    resource_group_name = var.resourceGroup
+    location = var.region
+    allocation_method = "Static"
+    sku = "Standard"
+}
+
+resource "azurerm_nat_gateway" "natGw" {
+    name = "natgw-poc-azure-01"
+    location = var.region
+    resource_group_name = var.resourceGroup
+    sku_name = "Standard"
+}
+
+resource "azurerm_nat_gateway_public_ip_association" "natGwPublicIpAssociation" {
+    nat_gateway_id = azurerm_nat_gateway.natGw.id
+    public_ip_address_id = azurerm_public_ip.natGwPublicIp.id
+}
+
+resource "azurerm_subnet_nat_gateway_association" "privateSubnetNatGwAssociation" {
+    subnet_id = azurerm_subnet.privateSubnet.id
+    nat_gateway_id = azurerm_nat_gateway.natGw.id
 }
